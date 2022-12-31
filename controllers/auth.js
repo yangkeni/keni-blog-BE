@@ -34,7 +34,8 @@ export const login = (req, res) => {
     const isPassword = bcrypt.compareSync(reqPassword, data[0].password);
     if (!isPassword) return res.status(400).json('wrong username or password');
     const { password, ...other } = data[0];
-    const token = jwt.sign({ id: data[0].id }, 'keni');
+    const token = jwt.sign({ id: data[0].id }, process.env.JWT_KEY);
+    
     res
       .cookie('access_token', token, {
         httpOnly: true,
