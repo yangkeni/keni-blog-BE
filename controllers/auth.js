@@ -48,6 +48,8 @@ export const login = (req, res) => {
 export const logout = (req, res) => {
   res
     .clearCookie('access_token', {
+      domain: 'localhost',
+      path: '/',
       sameSite: 'none',
       secure: true,
     })
