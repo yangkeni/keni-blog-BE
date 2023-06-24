@@ -25,6 +25,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/post', postRoutes);
 app.use('/api/tag', tagRoutes);
 
-app.listen(8800, () => {
+app.listen(8888, () => {
   console.log('Connected!');
 });

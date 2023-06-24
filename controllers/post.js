@@ -3,9 +3,9 @@ import jwt from 'jsonwebtoken';
 
 export const getPosts = (req, res) => {
   const postsQuery = {
-    tag: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id in (select posts.post_id from posts join tag_post on tag_post.post_id = posts.post_id join tags on tag_post.tag_id = tags.tag_id where tags.content=?) group by posts.post_id ;`,
-    cat: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.cat=? group by posts.post_id;`,
-    default: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id group by posts.post_id;`,
+    tag: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id in (select posts.post_id from posts join tag_post on tag_post.post_id = posts.post_id join tags on tag_post.tag_id = tags.tag_id where tags.content=?) group by posts.post_id ;`,
+    cat: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.cat=? group by posts.post_id;`,
+    default: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id group by posts.post_id;`,
   };
   const param = Object.keys(req.query);
   db.query(
@@ -18,7 +18,7 @@ export const getPosts = (req, res) => {
         data.map((val) => {
           let tags = JSON.parse(val.tags);
           if (!tags[0].id) {
-            tags = null;
+            tags = [{ id: 4, color: 'cyan', value: 'cyan', content: '杂谈' }];
           }
           return {
             postId: val.post_id,
@@ -50,13 +50,15 @@ export const addPost = async (req, res) => {
     db.query(
       postInsertQuery,
       [[userId, username, cat, title, desc]],
-      async (err, data) => {
+      (err, data) => {
         if (err) throw err;
         const { insertId: postId } = data;
         const postDetailInsertQuery =
           'insert into posts_detail(post_id, post_content) values(?)';
-        await db.query(postDetailInsertQuery, [[postId, content]]);
-        return res.status(200);
+        db.query(postDetailInsertQuery, [[postId, content]], (err, data) => {
+          if (err) throw err;
+          return res.status(200).json('success');
+        });
       }
     );
   } catch (error) {
@@ -65,13 +67,13 @@ export const addPost = async (req, res) => {
 };
 
 export const getPost = (req, res) => {
-  const postMetaQuery = `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id = ?;`;
+  const postMetaQuery = `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id = ?;`;
   const postId = req.params.id;
   db.query(postMetaQuery, [postId], (err, meta) => {
     if (err) return res.status(500).json(err);
     let tags = JSON.parse(meta[0].tags);
     if (!tags || !tags[0].id) {
-      tags = null;
+      tags = [{ id: 4, color: 'cyan', value: 'cyan', content: '杂谈' }];
     }
     const postDetailQuery =
       'select post_content from posts_detail where post_id = ?';
