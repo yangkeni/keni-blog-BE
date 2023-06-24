@@ -14,8 +14,6 @@ it's the backend proj of keni's blog
 ## TODO
 
 + [ ] 🚧 env config all file
-+ [ ] 🚧 cd mysql to mysql2 or orm
-+ [ ] 🚧 callback to await
 + [ ] 🚧 combine tag & cat
 + [ ] 🚧 Collaboration support
 + [ ] 🚧 koa in the near future
