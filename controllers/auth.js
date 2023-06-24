@@ -1,14 +1,16 @@
 import { db } from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { STATUSCODE } from './statusCode.js';
 
-export const register = (req, res) => {
+export const register = async(req, res) => {
   // check user exist
   const userQuery = 'SELECT * FROM users WHERE email = ? OR username = ?';
   const { username, email, password } = req.body;
-  db.query(userQuery, [email, username], (err, data) => {
-    if (err) return res.status(500).json(err);
-    if (data.length) return res.status(409).json('User already exist');
+  try {
+    const [ userRes ] = await db.query(userQuery, [email, username]);
+    if (userRes.length) 
+      return res.status(STATUSCODE.CONFLICT).json('User already exist');
     // hash password and salt it
     const salt = bcrypt.genSaltSync();
     const hash = bcrypt.hashSync(password, salt);
@@ -17,32 +19,41 @@ export const register = (req, res) => {
       'INSERT INTO users(`username`, `email`, `password`) VALUES (?)';
     const values = [username, email, hash];
 
-    db.query(insertUserQuery, [values], (err, data) => {
-      if (err) return res.status(500).json(err);
-      return res.status(200).json(data);
-    });
-  });
+    const [ insertUserRes ] = await db.query(insertUserQuery, [values]);
+    return res.status(STATUSCODE.SUCCESS).json(insertUserRes);
+  } catch (error) {
+    console.warn(error);
+    return res.status(STATUSCODE.DB_ERROR).json({
+      state: 'register error',
+      error
+    })
+  }
 };
 
-export const login = (req, res) => {
+export const login = async(req, res) => {
   const userQuery = 'SELECT * FROM users WHERE username = ?';
   const { username, password: reqPassword } = req.body;
-  db.query(userQuery, [username, reqPassword], (err, data) => {
-    if (err) return res.status(500).json(err);
-    if (!data.length) return res.status(404).json('user does not exist');
-
-    const isPassword = bcrypt.compareSync(reqPassword, data[0].password);
-    if (!isPassword) return res.status(400).json('wrong username or password');
-    const { password, ...other } = data[0];
-    const token = jwt.sign({ id: data[0].id }, process.env.JWT_KEY);
-    
+  try {
+    const [ userRes ] = await db.query(userQuery, [username, reqPassword]);
+    if (!userRes.length) 
+      return res.status(STATUSCODE.DELETE_ERROR).json('user does not exist');
+    const isPassword = bcrypt.compareSync(reqPassword, userRes[0].password);
+    if (!isPassword) return res.status(STATUSCODE.WRONG_REQ).json('wrong username or password');
+    const { password, ...other } = userRes[0];
+    const token = jwt.sign({ id: userRes[0].id }, process.env.JWT_KEY);
     res
       .cookie('access_token', token, {
         httpOnly: true,
       })
-      .status(200)
+      .status(STATUSCODE.SUCCESS)
       .json(other);
-  });
+  } catch (error) {
+    console.warn(error);
+    return res.status(STATUSCODE.DB_ERROR).json({
+      state: 'get user error',
+      error
+    })
+  }
 };
 
 export const logout = (req, res) => {
@@ -53,6 +64,6 @@ export const logout = (req, res) => {
       sameSite: 'none',
       secure: true,
     })
-    .status(200)
+    .status(STATUSCODE.SUCCESS)
     .json('User has been logged out.');
 };
