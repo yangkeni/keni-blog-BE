@@ -11,12 +11,16 @@ export const getPosts = async(req, res) => {
   const param = Object.keys(req.query);
   try {
     const [ posts ] = await db.query(postsQuery[param.length > 0 ? param[0] : 'default'], [req.query[param[0]]]);
-    const renamePosts = posts.map(val => {
+    const renamePosts = [];
+    posts.map(val => {
       let tags = val.tags;
       if (!tags[0].id) {
         tags = [{ id: 4, color: 'cyan', value: 'cyan', content: '杂谈' }];
       }
-      return {
+      if (val.visit===0) {
+        return;
+      }
+      const renamePost = {
         postId: val.post_id,
         userId: val.user_id,
         author: val.author,
@@ -27,7 +31,10 @@ export const getPosts = async(req, res) => {
         date: val.post_date,
         modified: val.post_modified,
         tags: tags,
+        visit: val.visit,
       };
+      renamePosts.push(renamePost);
+      return renamePost;
     })
     return res.status(STATUSCODE.SUCCESS).json(renamePosts);
   } catch (error) {
