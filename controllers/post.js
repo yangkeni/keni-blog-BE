@@ -4,9 +4,9 @@ import jwt from 'jsonwebtoken';
 
 export const getPosts = async(req, res) => {
   const postsQuery = {
-    tag: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id in (select posts.post_id from posts join tag_post on tag_post.post_id = posts.post_id join tags on tag_post.tag_id = tags.tag_id where tags.content=?) group by posts.post_id ;`,
-    cat: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.cat=? group by posts.post_id;`,
-    default: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id group by posts.post_id;`,
+    tag: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.post_id in (select posts.post_id from posts join tag_post on tag_post.post_id = posts.post_id join tags on tag_post.tag_id = tags.tag_id where tags.content=?) group by posts.post_id Order by posts.post_modified desc;`,
+    cat: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) tags from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id where posts.cat=? group by posts.post_id Order by posts.post_modified desc;`,
+    default: `select posts.*, json_arrayagg(json_object("id", tags.tag_id, "color", tags.color, "content", tags.content, "value", tags.color)) 'tags' from posts left join tag_post on posts.post_id = tag_post.post_id left join tags on tag_post.tag_id = tags.tag_id group by posts.post_id Order by posts.post_modified desc;`,
   };
   const param = Object.keys(req.query);
   try {
